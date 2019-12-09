@@ -3,8 +3,8 @@ import os
 
 from raysect.primitive import Mesh
 from raysect.optical.spectralfunction import ConstantSF
-from raysect.optical.material import AbsorbingSurface, Lambert
-from raysect.optical.library.metal import RoughTungsten, RoughBeryllium
+from raysect.optical.material import Lambert
+from raysect.optical.library.metal import RoughTungsten
 
 try:
     CADMESH_PATH = os.environ['CHERAB_CADMESH']
@@ -262,6 +262,10 @@ UPPER_DIVERTOR = UPPER_DIVERTOR_ARMOUR + UPPER_DIVERTOR_NOSE + UPPER_GAS_BAFFLE
 
 MASTU_FULL_MESH = ELM_COILS + PF_COILS + VACUUM_VESSEL + BEAM_DUMPS + CENTRE_COLUMN + LOWER_DIVERTOR + UPPER_DIVERTOR
 
+CORE_BOLOMETERS = [
+    (os.path.join(CADMESH_PATH, 'mast/mastu-full/diagnostics/CORE_poloidal_bolometer.rsm'), METAL),
+    (os.path.join(CADMESH_PATH, 'mast/mastu-full/diagnostics/CORE_tangential_bolometer.rsm'), METAL),
+]
 
 SXD_BOLOMETERS = [
     (os.path.join(CADMESH_PATH, 'mast/mastu-full/diagnostics/DIVERTOR_horizontal_bolometer.rsm'), METAL),
@@ -288,4 +292,3 @@ def import_mastu_mesh(world, override_material=None, metal_material=None, lamber
         directory, filename = os.path.split(mesh_path)
         mesh_name, ext = filename.split('.')
         Mesh.from_file(mesh_path, parent=world, material=material, name=mesh_name)
-
