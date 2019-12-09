@@ -115,7 +115,8 @@ def calculate_and_save_sensitivities(grid_name, camera, mesh_parts,
         file_name = "{}_{}_bolo.npy".format(
             grid_name.replace("_", "-"), camera.lower()
         )
-    bolo = load_default_bolometer_config(bolo_name, parent=world, shot=50000)
+    bolo = load_default_bolometer_config(bolo_name, parent=world, shot=50000,
+                                         override_material=AbsorbingSurface())
 
     if camera_transform is not None:
         bolo.transform = camera_transform * bolo.transform
