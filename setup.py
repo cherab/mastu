@@ -53,7 +53,7 @@ setup(
     license="EUPL 1.1",
     namespace_packages=['cherab'],
     packages=find_packages(),
+    install_requires=['cherab'],
     include_package_data=True,
     ext_modules=cythonize(extensions, nthreads=threads, force=force, compiler_directives=directives)
 )
-
