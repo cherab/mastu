@@ -44,8 +44,7 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.openadas import OpenADAS
 
-from cherab.mastu.equilibrium.MASTU_equilibrium import MASTUEquilibrium
-from cherab.mastu.machine import cad_files, wall_outline
+from cherab.mastu.equilibrium import MASTUEquilibrium
 
 
 
