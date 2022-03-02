@@ -44,10 +44,10 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.openadas import OpenADAS
 
-from cherab.mastu.equilibrium import MASTUEquilibrium
+from cherab.mastu.equilibrium import MASTEquilibrium
 
 
-
+plt.ion()
 
 client = pyuda.Client()
 
@@ -61,7 +61,7 @@ adas = OpenADAS(permit_extrapolation=True)  # create atomic data source
 # ########################### PLASMA EQUILIBRIUM ############################ #
 print('Plasma equilibrium')
 
-equilibrium = MASTUEquilibrium(PULSE)
+equilibrium = MASTEquilibrium(PULSE)
 equil_time_slice = equilibrium.time(TIME)
 psin_2d = equil_time_slice.psi_normalised
 psin_3d = AxisymmetricMapper(equil_time_slice.psi_normalised)
@@ -354,20 +354,21 @@ print(los)
 
 view = {'view':los, 'direction':direction, 'pos':pos}
 
-with open('/home/sgibson/Desktop/beam_sample2.pkl', 'wb') as f:
-    pickle.dump(beam, f, pickle.HIGHEST_PROTOCOL)
+# Uncomment to write the results to file.
+# with open('/home/sgibson/Desktop/beam_sample2.pkl', 'wb') as f:
+#     pickle.dump(beam, f, pickle.HIGHEST_PROTOCOL)
 
-with open('/home/sgibson/Desktop/view.pkl', 'wb') as f:
-    pickle.dump(view, f, pickle.HIGHEST_PROTOCOL)
+# with open('/home/sgibson/Desktop/view.pkl', 'wb') as f:
+#     pickle.dump(view, f, pickle.HIGHEST_PROTOCOL)
 
-idl.put('xc',xc)
-idl.put('yc',yc)
-idl.put('zc',zc)
-idl.put('full_energy',full_energy)
-idl.put('half_energy',half_energy)
-idl.put('third_energy',third_energy)
+# idl.put('xc',xc)
+# idl.put('yc',yc)
+# idl.put('zc',zc)
+# idl.put('full_energy',full_energy)
+# idl.put('half_energy',half_energy)
+# idl.put('third_energy',third_energy)
 
-idl.execute('save,xc,yc,zc,full_energy,half_energy,third_energy,filename="/home/sgibson/Project/msesim/beam_params.xdr"')
+# idl.execute('save,xc,yc,zc,full_energy,half_energy,third_energy,filename="/home/sgibson/Project/msesim/beam_params.xdr"')
 
 # ############################### OBSERVATION ###############################
 # print('Observation')
@@ -404,9 +405,5 @@ plt.xlabel('Distance along beam line (m)')
 plt.ylabel('Beam component density')
 plt.legend()
 plt.title('Attenuation of beam components')
+plt.ioff()
 plt.show()
-
-
-
-
-

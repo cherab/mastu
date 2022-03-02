@@ -26,14 +26,18 @@ from raysect.core import Point2D
 from cherab.tools.equilibrium import EFITEquilibrium
 
 
-class MASTUEquilibrium:
+class MASTEquilibrium:
     """
-    Reads MAST-U EFIT equilibrium data and provides object access to each timeslice.
+    Reads MAST EFIT equilibrium data and provides object access to each timeslice.
 
-    :param pulse: MAST-U pulse number.
+    :param pulse: MAST pulse number.
     """
 
     def __init__(self, pulse):
+
+        if pulse >= 40000:
+            raise ValueError("MASTEquilibrium on supports pulses before 40000. "
+                             "Use MASTUEquilibrium instead for pulses after 40000.")
 
         self.client = pyuda.Client()  # get the pyuda client
 
@@ -230,3 +234,142 @@ class MASTUEquilibrium:
         # magic number for vocel_coef from old code
         return poly_coords
 
+
+class MASTUEquilibrium:
+    """
+    Reads MAST-U EFIT equilibrium data and provides object access to each timeslice.
+
+    :param pulse: MAST pulse number.
+    """
+
+    def __init__(self, pulse):
+
+        if isinstance(pulse, int) and pulse < 40000:
+            raise ValueError("MAST-U Equilibria only supported for pulse 40000 onwards.")
+
+        self.client = pyuda.Client()  # get the pyuda client
+
+        # Poloidal magnetic flux per toroidal radian as a function of (time, R, Z)
+        self.psi = self.client.get("/epm/output/profiles2D/poloidalFlux", pulse)
+
+        self.time_slices = self.psi.dims[0].data
+        self.time_range = self.time_slices.min(), self.time_slices.max()
+
+        # Psi grid axes f(nr), f(nz)
+        self.r = self.client.get("/epm/output/profiles2D/r", pulse)
+        self.z = self.client.get("/epm/output/profiles2D/z", pulse)
+
+        # f profile: poloidal current flux function, f=R*Bphi; f(psin, C)
+        self.f = self.client.get("/epm/output/fluxFunctionProfiles/ffPrime", pulse)
+
+        # q profile
+        self.q = self.client.get("/epm/output/fluxFunctionProfiles/q", pulse)
+
+        # Poloidal magnetic flux per toroidal radian as a function of radius at Z=0
+        self.psi_r = self.client.get("/epm/output/fluxFunctionProfiles/poloidalFlux", pulse)
+
+        # Poloidal magnetic flux per toroidal radian at the plasma boundary and magnetic axis
+        self.psi_lcfs = self.client.get("/epm/output/globalParameters/psiBoundary", pulse)
+        self.psi_axis = self.client.get("/epm/output/globalParameters/psiAxis", pulse)
+
+        # Plasma current
+        self.plasma_current = self.client.get("/epm/output/globalParameters/plasmaCurrent", pulse)
+
+        # Reference vaccuum toroidal B field at R = efm_bvac_r
+        self.b_vacuum_magnitude = self.client.get("/epm/output/globalParameters/bvacRmag", pulse)
+
+        # Magnetic axis co-ordinates
+        self.axis_coord_r = self.client.get("/epm/output/globalParameters/magneticAxis/R", pulse)
+        self.axis_coord_z = self.client.get("/epm/output/globalParameters/magneticAxis/Z", pulse)
+
+        # Reference vacuum field is at the magnetic axis.
+        self.b_vacuum_radius = self.axis_coord_r
+
+        # X point and strike point coordinates.
+        nxp = self.client.get("/epm/output/separatrixGeometry/xpointCount", pulse).data
+        rxp = self.client.get("/epm/output/separatrixGeometry/xpointR", pulse).data
+        zxp = self.client.get("/epm/output/separatrixGeometry/xpointZ", pulse).data
+        rsp = self.client.get("/epm/output/separatrixGeometry/strikepointR", pulse).data
+        zsp = self.client.get("/epm/output/separatrixGeometry/strikepointZ", pulse).data
+        self.xpoints = []
+        self.strike_points = []
+        for n, rx, zx, rs, zs in zip(nxp, rxp, zxp, rsp, zsp):
+            if np.isnan(n):
+                n = 0
+            n = int(n)
+            self.xpoints.append([Point2D(x, y) for (x, y) in zip(rx[:n], zx[:n])])
+            # Each X point will have 2 associated strike points.
+            self.strike_points.append([Point2D(x, y) for (x, y) in zip(rs[:2*n], zs[:2*n])])
+
+        #minor radius
+        self.minor_radius = self.client.get("/epm/output/separatrixGeometry/minorRadius", pulse)
+
+        #lcfs boundary polygon
+        self.lcfs_poly_r = self.client.get("/epm/output/separatrixGeometry/rBoundary", pulse)
+        self.lcfs_poly_z = self.client.get("/epm/output/separatrixGeometry/zBoundary", pulse)
+
+        # limiter boundary polygon
+        self.limiter_poly_r = self.client.get("/epm/input/limiter/rValues", pulse)
+        self.limiter_poly_z = self.client.get("/epm/input/limiter/zValues", pulse)
+
+    def time(self, time):
+        """
+        Returns an equilibrium object for the time-slice closest to the requested time.
+
+        The specific time-slice returned is held in the time attribute of the returned object.
+
+        :param time: The equilibrium time point.
+        :returns: An EFIT Equilibrium object.
+        """
+
+        # locate the nearest time point and fail early if we are outside the time range of the data
+        tmin = self.time_slices.min()
+        tmax = self.time_slices.max()
+        if not tmin <= time <= tmax:
+            raise ValueError('Requested time lies outside the range of the data: [{}, {}]s.'.format(tmin, tmax))
+        index = np.argmin(abs(self.time_slices - time))
+
+        time = self.time_slices[index]
+
+        psi = self.psi.data[index]
+        psi_lcfs = self.psi_lcfs.data[index]
+        psi_axis = self.psi_axis.data[index]
+
+        f_profile_psin = self.f.dims[1].data
+        f_profile_magnitude = self.f.data[index, :]
+        f_profile = np.asarray([f_profile_psin, f_profile_magnitude])
+
+        q_profile_magnitude = self.q.data[index]
+        q_profile_psin = self.q.dims[1].data
+        q_profile = np.asarray([q_profile_psin, q_profile_magnitude])
+
+        axis_coord = Point2D(self.axis_coord_r.data[index], self.axis_coord_z.data[index])
+
+        b_vacuum_magnitude = self.b_vacuum_magnitude.data[index]
+        b_vacuum_radius = self.b_vacuum_radius.data[index]
+
+        lcfs_poly_r = self.lcfs_poly_r.data[index]
+        lcfs_poly_z = self.lcfs_poly_z.data[index]
+        # LCFS always has the same number of points.
+        lcfs_polygon = np.stack((lcfs_poly_r, lcfs_poly_z), axis=0)
+        if np.all(lcfs_polygon[:, 0] == lcfs_polygon[:, -1]):
+            # First and last points are the same: need an open polygon for Cherab.
+            lcfs_polygon = lcfs_polygon[:, :-1]
+
+        limiter_poly_r = self.limiter_poly_r.data
+        limiter_poly_z = self.limiter_poly_z.data
+        limiter_polygon = np.stack((limiter_poly_r, limiter_poly_z), axis=0)
+        if np.all(limiter_polygon[:, 0] == limiter_polygon[:, -1]):
+            # First and last points are the same: need an open polygon for Cherab.
+            limiter_polygon = limiter_polygon[:, :-1]
+
+        r = self.r.data
+        z = self.z.data
+
+        xpoints = self.xpoints[index]
+        strike_points = self.strike_points[index]
+
+        return EFITEquilibrium(r, z, psi, psi_axis, psi_lcfs, axis_coord,
+                               xpoints, strike_points, f_profile, q_profile,
+                               b_vacuum_radius, b_vacuum_magnitude,
+                               lcfs_polygon, limiter_polygon, time)
