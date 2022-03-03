@@ -44,14 +44,14 @@ from cherab.core.model import ExcitationLine, RecombinationLine
 from cherab.core.model import SingleRayAttenuator, BeamCXLine
 from cherab.openadas import OpenADAS
 
-from cherab.mastu.equilibrium import MASTEquilibrium
+from cherab.mastu.equilibrium import MASTUEquilibrium
 
 
 plt.ion()
 
 client = pyuda.Client()
 
-PULSE = 28101
+PULSE = 45272
 TIME = 0.2
 
 world = World()
@@ -61,7 +61,7 @@ adas = OpenADAS(permit_extrapolation=True)  # create atomic data source
 # ########################### PLASMA EQUILIBRIUM ############################ #
 print('Plasma equilibrium')
 
-equilibrium = MASTEquilibrium(PULSE)
+equilibrium = MASTUEquilibrium(PULSE)
 equil_time_slice = equilibrium.time(TIME)
 psin_2d = equil_time_slice.psi_normalised
 psin_3d = AxisymmetricMapper(equil_time_slice.psi_normalised)
@@ -73,10 +73,10 @@ print('Plasma configuration')
 plasma = Plasma(parent=world)
 plasma.atomic_data = adas
 plasma.b_field = VectorAxisymmetricMapper(equil_time_slice.b_field)
-plasma_index = equilibrium._find_nearest(equilibrium.plasma_times.data, TIME)
+plasma_index = equilibrium._find_nearest(equilibrium.time_slices, TIME)
 
-r = equilibrium.r.data[0,:] #R,Z co-ordinates defined in EFIT
-z = equilibrium.z.data[0,:]
+r = equilibrium.r.data #R,Z co-ordinates defined in EFIT
+z = equilibrium.z.data
 
 #Find Psi(R,Z=0)
 psi2d = np.zeros((len(r),len(z)))
