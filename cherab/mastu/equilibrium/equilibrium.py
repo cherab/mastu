@@ -312,6 +312,19 @@ class MASTUEquilibrium:
         self.limiter_poly_r = self.client.get("/epm/input/limiter/rValues", pulse)
         self.limiter_poly_z = self.client.get("/epm/input/limiter/zValues", pulse)
 
+    @staticmethod
+    def _find_nearest(array, value):
+
+        if value < array.min() or value > array.max():
+            raise IndexError("Requested value is outside the range of the data.")
+
+        index = np.searchsorted(array, value, side="left")
+
+        if (value - array[index])**2 < (value - array[index + 1])**2:
+            return index
+        else:
+            return index + 1
+
     def time(self, time):
         """
         Returns an equilibrium object for the time-slice closest to the requested time.
