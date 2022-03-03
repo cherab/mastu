@@ -91,8 +91,8 @@ psi_z0 = psi2d[:,32]
 flow_velocity = lambda x, y, z: Vector3D(0,0,0)
 
 # Set Ti = Te
-ion_temperature = client.get("AYC_TE", PULSE)
-radius_data = client.get("ayc_r", PULSE) #spatial extent of the data
+ion_temperature = client.get("/AYC/T_E", PULSE)
+radius_data = client.get("/AYC/R", PULSE) #spatial extent of the data
 ion_time_index = equilibrium._find_nearest(ion_temperature.dims[0].data, TIME) #find the time index we're interested in
 
 #get the time slice
@@ -148,7 +148,7 @@ plt.colorbar()
 ### ELECTRON DENSITY ####
 
 # Set Ti = Te
-electron_density_data = client.get("AYC_NE", PULSE)
+electron_density_data = client.get("/AYC/N_E", PULSE)
 electron_time_index = equilibrium._find_nearest(electron_density_data.dims[0].data, TIME)
 
 #get the time slice
