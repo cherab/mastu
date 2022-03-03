@@ -20,9 +20,9 @@ from cherab.mastu.equilibrium import MASTUEquilibrium
 
 
 print("Reading equilibrium...")
-pulse_equilibrium = MASTUEquilibrium(28101)
+pulse_equilibrium = MASTUEquilibrium(45459)
 
-eq = pulse_equilibrium.time(0.2)
+eq = pulse_equilibrium.time(0.6)
 
 plot_equilibrium(eq)
 

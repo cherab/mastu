@@ -1,2 +1,2 @@
 
-from .equilibrium import MASTUEquilibrium
+from .equilibrium import MASTEquilibrium, MASTUEquilibrium
