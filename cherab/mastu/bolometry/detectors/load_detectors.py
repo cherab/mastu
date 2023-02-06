@@ -4,7 +4,7 @@ import pyuda
 from raysect.core import Point3D, Vector3D
 from raysect.primitive import Mesh
 from cherab.tools.observers.bolometry import BolometerCamera, BolometerFoil, BolometerSlit
-from cherab.mastu.machine import CORE_BOLOMETERS, SXD_BOLOMETERS
+from cherab.mastu.machine import CORE_BOLOMETERS, SXD_BOLOMETERS, SXDU_BOLOMETERS
 
 
 def load_default_bolometer_config(bolometer_id, parent=None, shot=50000, override_material=None):
@@ -31,8 +31,8 @@ def load_default_bolometer_config(bolometer_id, parent=None, shot=50000, overrid
     except KeyError:
         raise ValueError("Bolometer camera ID '{}' not recognised.".format(bolometer_id))
 
-    if chamber.lower() not in ('sxdl', 'core'):
-        raise ValueError('Chamber must be "SXDL" or "CORE"')
+    if chamber.lower() not in ('sxdl', 'core', 'sxdu'):
+        raise ValueError('Chamber must be "SXDL", "CORE" or "SXDU"')
 
     client = pyuda.Client()
     try:
@@ -56,6 +56,11 @@ def load_default_bolometer_config(bolometer_id, parent=None, shot=50000, overrid
             mesh_geometry_data = CORE_BOLOMETERS[1]
         else:
             raise ValueError('For Core, camera name must be "Poloidal" or "Tangential"')
+    elif chamber.lower() == 'sxdu':
+        if camera_name.lower() == 'outer':
+            mesh_geometry_data = SXDU_BOLOMETERS[0]
+        else:
+            raise ValueError('For SXDU, camera name must be "Outer"')
 
     camera_material = override_material or mesh_geometry_data[1]
     camera_geometry = Mesh.from_file(mesh_geometry_data[0], material=camera_material)

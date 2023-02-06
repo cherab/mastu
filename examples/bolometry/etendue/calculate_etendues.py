@@ -31,10 +31,13 @@ elif camera == 'Poloidal':
     camera_name = 'CORE - Poloidal'
 elif camera == 'Tangential':
     camera_name = 'CORE - Tangential'
+elif camera == 'OuterSXDU':
+    camera_name = 'SXDU - Outer'
 else:
-    raise ValueError('Camera should be "Outer", "Upper", "Poloidal", "Tangential"')
+    raise ValueError('Camera should be "Outer", "Upper", "Poloidal", "Tangential", "OuterSXDU"')
 
-bolometer_camera = load_default_bolometer_config(camera_name, parent=world, shot=50000)
+shot = 50000
+bolometer_camera = load_default_bolometer_config(camera_name, parent=world, shot=shot)
 etendues = np.empty((len(bolometer_camera), 2))
 for i, detector in enumerate(bolometer_camera):
     etendue, etendue_error = detector.calculate_etendue(ray_count=250000)

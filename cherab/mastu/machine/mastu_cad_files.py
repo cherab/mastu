@@ -272,6 +272,10 @@ SXD_BOLOMETERS = [
     (os.path.join(CADMESH_PATH, 'mast/mastu-full/diagnostics/DIVERTOR_verticall_bolometer.rsm'), METAL),
 ]
 
+SXDU_BOLOMETERS = [
+    (os.path.join(CADMESH_PATH, 'mast/mastu-full/diagnostics/UPPER_DIV_BOLOM.rsm'), METAL),
+]
+
 
 def import_mastu_mesh(world, override_material=None, metal_material=None, lambert_material=None):
 
