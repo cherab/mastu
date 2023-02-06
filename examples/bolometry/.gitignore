@@ -1,0 +1,12 @@
+# Calculations output .npy files
+*.npy
+# Jobs output log files
+*.log
+*.out
+*.err
+# SGE jobs by default output .o<nn...> and .e<nn...> for serial,
+# and .po<nn...> and .pe<nn...> for parallel jobs
+*.o[1-9]*
+*.e[1-9]*
+*.po[1-9]*
+*.pe[1-9]*

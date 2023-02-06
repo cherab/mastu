@@ -13,16 +13,22 @@ cell).
 """
 import os
 import sys
+import multiprocessing
 import numpy as np
 
 from raysect.optical import World
 from raysect.optical.material.absorber import AbsorbingSurface
 from raysect.primitive import Mesh, import_obj, Cylinder
-from raysect.core import translate, SerialEngine, MulticoreEngine
+from raysect.core import translate
+
+from cherab.tools.raytransfer import RayTransferCylinder, RayTransferPipeline0D
 
 from cherab.mastu.machine.mast_m9_cad_files import MAST_FULL_MESH
 from cherab.mastu.machine.mastu_cad_files import MASTU_FULL_MESH
 from cherab.mastu.bolometry import load_default_bolometer_config, load_standard_voxel_grid
+
+# If running as a batch job, use only the requested number of processes
+NSLOTS = os.environ.get('NSLOTS', multiprocessing.cpu_count())
 
 
 def load_vessel_world(mesh_parts, shift_p5=False):
@@ -66,8 +72,7 @@ def load_vessel_world(mesh_parts, shift_p5=False):
 
 
 def calculate_and_save_sensitivities(grid_name, camera, mesh_parts,
-                                     istart=None, iend=None, shift_p5=False,
-                                     camera_transform=None):
+                                     shift_p5=False, camera_transform=None):
     """
     Calculate the sensitivity matrices for an entire bolometer camera,
     and save to a Numpy save file.
@@ -75,18 +80,10 @@ def calculate_and_save_sensitivities(grid_name, camera, mesh_parts,
     The output file is named as follows:
     <grid>_<camera>_bolo.npy
 
-    If istart and iend are not none, the output file is named:
-    <grid>_<camera>_bolo_<istart>_<iend>.npy
-
     Parameters:
     grid: the name of the reconstruction grid to load
     camera: the name of the bolometer camera
     mesh_parts: the list of mesh files to read and load into the world
-    istart: starting index for grid cells
-    iend: final index for grid cells
-
-    If istart and iend are not none, a subset [istart, iend) of the grid
-    cell sensitivities are calculated.
     """
     world = load_vessel_world(mesh_parts, shift_p5)
     # Trim off metadata from camera if it exists. This metadata is only for the
@@ -98,54 +95,48 @@ def calculate_and_save_sensitivities(grid_name, camera, mesh_parts,
         bolo_name = "CORE - {}".format(cam_nometa)
     else:
         raise ValueError("Only 'sxd', 'core' and 'core_high_res' grids supported.")
-    # Using a slice object for the voxel range means that even if
-    # iend > grid.count no error will be thrown. In this case, only the voxels
-    # from istart to grid.count will be returned
-    voxel_range = slice(istart, iend)
-    grid = load_standard_voxel_grid(grid_name, parent=world, voxel_range=voxel_range)
-
-    if istart is not None and iend is not None:
-        # Check whether a full range of cells was returned, or a smaller range due
-        # to iend > grid.count
-        iend = istart + grid.count
-        file_name = "{}_{}_bolo_{}_{}.npy".format(
-            grid_name.replace("_", "-"), camera.lower(), istart, iend
-        )
-    else:
-        file_name = "{}_{}_bolo.npy".format(
-            grid_name.replace("_", "-"), camera.lower()
-        )
-    bolo = load_default_bolometer_config(bolo_name, parent=world, shot=50000,
-                                         override_material=AbsorbingSurface())
+    # grid = load_standard_voxel_grid(grid_name, parent=world)
+    file_name = "rtm_{}_{}_bolo.npy".format(
+        grid_name.replace("_", "-"), camera.lower()
+    )
+    bolo = load_default_bolometer_config(bolo_name, parent=world, shot=50000)
 
     if camera_transform is not None:
         bolo.transform = camera_transform * bolo.transform
 
-    sensitivities = np.zeros((len(bolo), grid.count))
+    if grid_name == 'sxdl':
+        rtc = RayTransferCylinder(radius_inner=0.5, radius_outer=2, height=0.6,
+                                  transform=translate(0, 0, -2.1),
+                                  mask=None, n_radius=150, n_height=60,
+                                  parent=world)
+    elif grid_name == 'core':
+        rtc = RayTransferCylinder(radius_inner=0.25, radius_outer=1.5431, height=3.1,
+                                  transform=translate(0, 0, -1.549),
+                                  mask=None, n_radius=30, n_height=70,
+                                  parent=world)
+    elif grid_name == 'core_high_res':
+        rtc = RayTransferCylinder(radius_inner=0.25, radius_outer=1.5431, height=3.1,
+                                  transform=translate(0, 0, -1.549),
+                                  mask=None, n_radius=750, n_height=1550,
+                                  parent=world)
+    else:
+        raise ValueError("Invalid grid name {}".format(grid_name))
+    sensitivities = np.zeros((len(bolo), rtc.bins))
     for i, detector in enumerate(bolo):
-        # If running as a batch job, use only the requested number of processes
-        try:
-            nslots = int(os.environ['NSLOTS'])
-            if nslots == 1:
-                detector.render_engine = SerialEngine()
-            else:
-                detector.render_engine = MulticoreEngine(nslots)
-        except KeyError:
-            pass
+        detector.render_engine.processes = NSLOTS
         print('calculating detector {}'.format(detector.name))
-        sensitivities[i] = detector.calculate_sensitivity(grid, ray_count=100000)
+        detector.pixel_samples = 10000
+        detector.spectral_bins = rtc.bins
+        detector.min_wavelength = 400
+        detector.max_wavelength = detector.min_wavelength + 1
+        detector.pipelines = [RayTransferPipeline0D()]
+        detector.observe()
+        sensitivities[i] = detector.pipelines[0].matrix
     np.save(file_name, sensitivities)
 
 
 def main():
     camera = sys.argv[1]
-    try:
-        istart = int(sys.argv[2])
-        iend = int(sys.argv[3])
-    except (IndexError, ValueError):
-        istart = None
-        iend = None
-
     shift_p5 = False
     camera_transform = None
 
@@ -175,7 +166,7 @@ def main():
                          "'Poloidal-MAST'")
 
     calculate_and_save_sensitivities(
-        grid, camera, MESH_PARTS, istart, iend, shift_p5, camera_transform
+        grid, camera, MESH_PARTS, shift_p5, camera_transform
     )
 
 

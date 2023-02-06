@@ -17,9 +17,10 @@ from cherab.mastu.bolometry import load_default_bolometer_config
 world = World()
 sxd_outer = load_default_bolometer_config('SXDL - Outer', parent=world)
 sxd_upper = load_default_bolometer_config('SXDL - Upper', parent=world)
+sxdu_outer = load_default_bolometer_config('SXDU - Outer', parent=world)
 core_poloidal = load_default_bolometer_config('CORE - Poloidal', parent=world)
 # Don't plot tangential array on a poloidal cross section
-detectors = list(sxd_outer) + list(sxd_upper) + list(core_poloidal)
+detectors = list(sxd_outer) + list(sxd_upper) + list(sxdu_outer) + list(core_poloidal)
 
 import_mastu_mesh(world, override_material=AbsorbingSurface())
 
