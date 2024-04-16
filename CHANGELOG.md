@@ -6,6 +6,9 @@ Next release (TBD)
 New:
 * Importing MAST-U mesh files is now silent, with a `verbose` flag to override.
 
+Fixed:
+* Error getting the limiter polygon for grid masking with recent (v1.3.x) uda-mast.
+
 Release 1.1.0 (6 Feb 2023)
 --------------------------
 
