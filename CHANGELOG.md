@@ -8,6 +8,7 @@ New:
 
 Fixed:
 * Error getting the limiter polygon for grid masking with recent (v1.3.x) uda-mast.
+* Read the correct value for the f profile in MASTUEquilibrium. (#14)
 
 Release 1.1.0 (6 Feb 2023)
 --------------------------
