@@ -35,8 +35,8 @@ SXD_POLYGON_MASK = PolygonMask2D(_MASTU_SXD_GRID_POLYGON)
 # where z_max_sxd is the least negative Z value from the SXD polygon
 _LIMITING_SURFACE = client.geometry('/limiter/efit', 50000)
 _MASTU_CORE_GRID_POLYGON = np.array([
-    _LIMITING_SURFACE.data['data'].R,
-    _LIMITING_SURFACE.data['data'].Z
+    _LIMITING_SURFACE.data.R,
+    _LIMITING_SURFACE.data.Z
 ]).T
 _MIN_CORE_Z = _MASTU_SXD_GRID_POLYGON[:, 1].max()
 _NON_SXD_LIMITING_SURFACE = (

@@ -260,7 +260,7 @@ class MASTUEquilibrium:
         self.z = self.client.get("/epm/output/profiles2D/z", pulse)
 
         # f profile: poloidal current flux function, f=R*Bphi; f(psin, C)
-        self.f = self.client.get("/epm/output/fluxFunctionProfiles/ffPrime", pulse)
+        self.f = self.client.get("/epm/output/fluxFunctionProfiles/rBphi", pulse)
 
         # q profile
         self.q = self.client.get("/epm/output/fluxFunctionProfiles/q", pulse)

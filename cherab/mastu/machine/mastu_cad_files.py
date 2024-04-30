@@ -277,7 +277,7 @@ SXDU_BOLOMETERS = [
 ]
 
 
-def import_mastu_mesh(world, override_material=None, metal_material=None, lambert_material=None):
+def import_mastu_mesh(world, override_material=None, metal_material=None, lambert_material=None, verbose=False):
 
     for mesh_item in MASTU_FULL_MESH:
 
@@ -292,7 +292,8 @@ def import_mastu_mesh(world, override_material=None, metal_material=None, lamber
         else:
             material = default_material
 
-        print("importing {}  ...".format(os.path.split(mesh_path)[1]))
+        if verbose:
+            print("importing {}  ...".format(os.path.split(mesh_path)[1]))
         directory, filename = os.path.split(mesh_path)
         mesh_name, ext = filename.split('.')
         Mesh.from_file(mesh_path, parent=world, material=material, name=mesh_name)

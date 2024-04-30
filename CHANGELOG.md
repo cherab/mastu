@@ -1,6 +1,15 @@
 Project Changelog
 =================
 
+Release 1.1.1 (30 Apr 2024)
+------------------
+New:
+* Importing MAST-U mesh files is now silent, with a `verbose` flag to override.
+
+Fixed:
+* Error getting the limiter polygon for grid masking with recent (v1.3.x) uda-mast.
+* Read the correct value for the f profile in MASTUEquilibrium. (#14)
+
 Release 1.1.0 (6 Feb 2023)
 --------------------------
 

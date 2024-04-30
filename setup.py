@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="cherab-mastu",
-    version="1.1.0",
+    version="1.1.1",
     license="EUPL 1.1",
     namespace_packages=['cherab'],
     packages=find_packages(),
