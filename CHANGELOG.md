@@ -1,7 +1,7 @@
 Project Changelog
 =================
 
-Next release (TBD)
+Release 1.1.1 (30 Apr 2024)
 ------------------
 New:
 * Importing MAST-U mesh files is now silent, with a `verbose` flag to override.
